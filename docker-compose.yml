@@ -1,0 +1,83 @@
+networks:
+  halowatt-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+
+services:
+
+  # ─── PostgreSQL baza ────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: halowatt-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: halowatt
+      POSTGRES_USER: halowatt
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - halowatt-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U halowatt -d halowatt"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ─── Telegram bot (Node.js) ─────────────────────────────────────────────────
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: halowatt-bot
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./bot/.env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: halowatt
+      DB_USER: halowatt
+      DB_PASSWORD: secret
+    ports:
+      - "4000:4000"
+    networks:
+      - halowatt-net
+
+  # ─── Admin panel (Laravel + Apache) ─────────────────────────────────────────
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: halowatt-admin
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      bot:
+        condition: service_started
+    env_file:
+      - ./admin/.env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: halowatt
+      DB_USERNAME: halowatt
+      DB_PASSWORD: secret
+      BOT_API_URL: "http://bot:4000"
+    volumes:
+      - ./admin/app:/var/www/html/app
+      - ./admin/resources:/var/www/html/resources
+      - ./admin/routes:/var/www/html/routes
+      - ./admin/config:/var/www/html/config
+      - ./admin/database:/var/www/html/database
+    ports:
+      - "8000:80"
+    networks:
+      - halowatt-net

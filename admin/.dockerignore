@@ -1,0 +1,10 @@
+vendor/
+node_modules/
+.env
+storage/logs/*.log
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+.git/
+.idea/
+bootstrap/cache/*.php
