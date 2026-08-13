@@ -13,11 +13,11 @@
     @foreach($providers as $key => $p)
         @php
             $barMap = [
-                'ok'          => ['width' => 100, 'bar' => 'bg-emerald-500',                          'badge' => 'on',       'label' => 'Balans mavjud'],
-                'empty'       => ['width' => 6,   'bar' => 'bg-red-500',                               'badge' => 'rejected', 'label' => 'Balans tugagan'],
-                'invalid_key' => ['width' => 0,   'bar' => 'bg-slate-300 dark:bg-slate-600',           'badge' => 'off',      'label' => "API kalit noto'g'ri"],
-                'error'       => ['width' => 50,  'bar' => 'bg-amber-400',                             'badge' => 'pending',  'label' => 'Tekshirib bo\'lmadi'],
-                'unknown'     => ['width' => 0,   'bar' => 'bg-slate-300 dark:bg-slate-600',           'badge' => 'off',      'label' => 'Tekshirilmagan'],
+                'ok'          => ['width' => 100, 'bar' => 'bg-emerald-500',                'badge' => 'on',       'label' => 'Balans mavjud'],
+                'empty'       => ['width' => 100, 'bar' => 'bg-red-500',                     'badge' => 'rejected', 'label' => 'Balans tugagan'],
+                'invalid_key' => ['width' => 100, 'bar' => 'bg-amber-400',                   'badge' => 'pending',  'label' => "API kalit noto'g'ri"],
+                'error'       => ['width' => 100, 'bar' => 'bg-amber-400',                   'badge' => 'pending',  'label' => 'Tekshirib bo\'lmadi'],
+                'unknown'     => ['width' => 0,   'bar' => 'bg-slate-300 dark:bg-slate-600', 'badge' => 'off',      'label' => 'Tekshirilmagan'],
             ];
             $bal = $barMap[$p['balance_status']] ?? $barMap['unknown'];
         @endphp
