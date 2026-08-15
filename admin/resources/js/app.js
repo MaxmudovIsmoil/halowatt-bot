@@ -41,21 +41,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Kontent manbasi: AI qidiradi / Skriptdan olish — 2-tanlansa manba URL maydoni ochiladi
+    // Manba havolalari (URL) qo'shish/o'chirish — skript rejimi uchun
+    const urlList = document.querySelector('[data-url-list]');
+    document.querySelector('[data-url-add]')?.addEventListener('click', () => {
+        const rows = urlList.querySelectorAll('[data-url-row]');
+        const clone = rows[rows.length - 1].cloneNode(true);
+        clone.querySelector('input').value = '';
+        urlList.appendChild(clone);
+    });
+    urlList?.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('[data-url-remove]');
+        if (!removeBtn) return;
+        if (urlList.querySelectorAll('[data-url-row]').length > 1) {
+            removeBtn.closest('[data-url-row]').remove();
+        }
+    });
+
+    // Kontent manbasi: AI qidiradi / Skriptdan olish — 2-tanlansa manba URL ro'yxati ochiladi
     document.querySelectorAll('[data-mode-select]').forEach((select) => {
         const form = select.closest('form');
         const urlWrap = form?.querySelector('[data-mode-url-wrap]');
-        const urlInput = urlWrap?.querySelector('[data-mode-url-input]');
         if (!urlWrap) return;
 
-        const sync = () => {
-            const isScrape = select.value === 'scrape';
-            urlWrap.classList.toggle('hidden', !isScrape);
-            if (urlInput) urlInput.required = isScrape;
-        };
+        // Eslatma: bir nechta havoladan kamida bittasi kifoya, shuning uchun
+        // HTML `required` qo'yilmaydi — buni server tomon tekshiradi.
+        const sync = () => urlWrap.classList.toggle('hidden', select.value !== 'scrape');
         select.addEventListener('change', sync);
         sync();
     });
+
+    // Bosh sahifa "Tezkor amallar": kanal tanlangach AI provayder/Kontent manbasi
+    // shu kanalning joriy sozlamalari bilan to'ldirilib ko'rsatiladi — bular faqat
+    // shu bir martalik ishga tushirish uchun, kanalning o'zi o'zgarmaydi.
+    const quickChannelSelect = document.querySelector('[data-quick-channel-select]');
+    if (quickChannelSelect) {
+        const overrideWrap = document.querySelector('[data-quick-override-wrap]');
+        const providerSelect = document.querySelector('[data-quick-provider-select]');
+        const modeSelect = document.querySelector('[data-quick-mode-select]');
+        const channelSettings = JSON.parse(quickChannelSelect.dataset.channelSettings || '{}');
+
+        const applyChannel = () => {
+            const settings = channelSettings[quickChannelSelect.value];
+            if (!settings) {
+                overrideWrap?.classList.add('hidden');
+                return;
+            }
+
+            overrideWrap?.classList.remove('hidden');
+            if (providerSelect) providerSelect.value = settings.ai_provider;
+            if (modeSelect) {
+                modeSelect.value = settings.source_mode;
+                modeSelect.dispatchEvent(new Event('change'));
+            }
+
+            const quickUrlList = overrideWrap?.querySelector('[data-url-list]');
+            const rowTemplate = quickUrlList?.querySelector('[data-url-row]');
+            if (quickUrlList && rowTemplate) {
+                const urls = settings.source_url?.length ? settings.source_url : [''];
+                quickUrlList.innerHTML = '';
+                urls.forEach((url) => {
+                    const clone = rowTemplate.cloneNode(true);
+                    clone.querySelector('input').value = url;
+                    quickUrlList.appendChild(clone);
+                });
+            }
+        };
+
+        quickChannelSelect.addEventListener('change', applyChannel);
+        applyChannel();
+    }
 
     // Modal: kanal qo'shish
     const modal = document.getElementById('add-channel-modal');

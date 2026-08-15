@@ -1,7 +1,7 @@
 const { query, getActiveChannels } = require('./db');
 const { generateWithAI, translateWithAI } = require('./generators/ai');
 const { generateFromRSS } = require('./generators/rss');
-const { scrapeUrl } = require('./generators/scrape');
+const { scrapeUrls } = require('./generators/scrape');
 const { sendPost } = require('./sender');
 
 /**
@@ -11,7 +11,8 @@ async function buildContentForChannel(channel) {
   const mode = channel.source_mode || 'ai';
 
   if (mode === 'scrape') {
-    const raw = await scrapeUrl(channel.source_url);
+    const urls = (channel.source_url || '').split(/\r?\n/).map((u) => u.trim()).filter(Boolean);
+    const raw = await scrapeUrls(urls);
     if (!raw || !raw.trim()) throw new Error('Manba havoladan matn topilmadi');
     const content = await translateWithAI(channel, raw);
     if (!content || !content.trim()) throw new Error('AI tarjima qila olmadi');

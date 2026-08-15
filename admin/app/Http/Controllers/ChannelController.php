@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Channel;
-use App\Models\Setting;
 use App\Services\BotClient;
+use App\Support\AiProviders;
 use Illuminate\Http\Request;
 
 class ChannelController extends Controller
@@ -22,29 +22,21 @@ class ChannelController extends Controller
         return $v;
     }
 
-    // Nofaol qilingan AI provayderlarni ro'yxatdan chiqaradi; agar $mustInclude
-    // (masalan kanal hozir foydalanayotgan provayder) nofaol bo'lsa ham saqlab qoladi.
-    private function activeAiProviders(?string $mustInclude = null): array
+    // Bo'sh qatorlarni tashlab, takrorlanmas manba havolalari ro'yxatini qaytaradi.
+    private function resolveSourceUrls(?array $raw): \Illuminate\Support\Collection
     {
-        $all = config('ai_providers');
-        $active = array_filter(
-            $all,
-            fn ($key) => Setting::get("ai_{$key}_active", '1') !== '0',
-            ARRAY_FILTER_USE_KEY
-        );
-
-        if ($mustInclude && !isset($active[$mustInclude]) && isset($all[$mustInclude])) {
-            $active[$mustInclude] = $all[$mustInclude];
-        }
-
-        return $active;
+        return collect($raw ?? [])
+            ->map(fn ($u) => trim((string) $u))
+            ->filter()
+            ->unique()
+            ->values();
     }
 
     public function index()
     {
         return view('channels.index', [
             'channels'    => Channel::withCount('sources')->latest()->get(),
-            'aiProviders' => $this->activeAiProviders(),
+            'aiProviders' => AiProviders::active(),
         ]);
     }
 
@@ -58,11 +50,17 @@ class ChannelController extends Controller
             'schedule_time'    => ['required', 'array', 'min:1'],
             'schedule_time.*'  => ['required', 'date_format:H:i'],
             'source_mode'      => ['nullable', 'in:ai,scrape'],
-            'source_url'       => ['nullable', 'required_if:source_mode,scrape', 'url', 'max:2048'],
+            'source_url'       => ['nullable', 'array'],
+            'source_url.*'     => ['nullable', 'url', 'max:2048'],
         ]);
 
         $times = collect($data['schedule_time'])->unique()->sort()->values()->implode(',');
         $sourceMode = $data['source_mode'] ?? 'ai';
+        $sourceUrls = $this->resolveSourceUrls($data['source_url'] ?? []);
+
+        if ($sourceMode === 'scrape' && $sourceUrls->isEmpty()) {
+            return back()->withErrors(['source_url' => 'Kamida bitta manba havolasi kiriting.'])->withInput();
+        }
 
         $channel = Channel::create([
             'title'            => $data['title'],
@@ -75,7 +73,7 @@ class ChannelController extends Controller
             'ai_provider'      => $data['ai_provider'] ?? 'claude',
             'category'         => $request->input('category', ''),
             'source_mode'      => $sourceMode,
-            'source_url'       => $sourceMode === 'scrape' ? $data['source_url'] : null,
+            'source_url'       => $sourceMode === 'scrape' ? $sourceUrls->implode("\n") : null,
         ]);
 
         return redirect()->route('channels.show', $channel)->with('success', 'Kanal qo\'shildi. RSS manbalar va AI promptni sozlash uchun quyidagi sozlamalarni to\'ldiring.');
@@ -87,7 +85,7 @@ class ChannelController extends Controller
         return view('channels.show', [
             'channel'       => $channel->load('sources'),
             'scheduleTimes' => $scheduleTimes ?: ['09:00'],
-            'aiProviders'   => $this->activeAiProviders($channel->ai_provider),
+            'aiProviders'   => AiProviders::active($channel->ai_provider),
         ]);
     }
 
@@ -103,11 +101,17 @@ class ChannelController extends Controller
             'schedule_time.*' => ['required', 'date_format:H:i'],
             'ai_prompt'       => ['required', 'string'],
             'source_mode'     => ['nullable', 'in:ai,scrape'],
-            'source_url'      => ['nullable', 'required_if:source_mode,scrape', 'url', 'max:2048'],
+            'source_url'      => ['nullable', 'array'],
+            'source_url.*'    => ['nullable', 'url', 'max:2048'],
         ]);
 
         $times = collect($data['schedule_time'])->unique()->sort()->values()->implode(',');
         $sourceMode = $data['source_mode'] ?? 'ai';
+        $sourceUrls = $this->resolveSourceUrls($data['source_url'] ?? []);
+
+        if ($sourceMode === 'scrape' && $sourceUrls->isEmpty()) {
+            return back()->withErrors(['source_url' => 'Kamida bitta manba havolasi kiriting.'])->withInput();
+        }
 
         $channel->update([
             'title'            => $data['title'],
@@ -120,7 +124,7 @@ class ChannelController extends Controller
             'schedule_enabled' => $request->boolean('schedule_enabled'),
             'auto_send'        => $request->boolean('auto_send'),
             'source_mode'      => $sourceMode,
-            'source_url'       => $sourceMode === 'scrape' ? $data['source_url'] : null,
+            'source_url'       => $sourceMode === 'scrape' ? $sourceUrls->implode("\n") : null,
         ]);
 
         return back()->with('success', 'Saqlandi.');

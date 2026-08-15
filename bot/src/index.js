@@ -54,6 +54,21 @@ cron.schedule('* * * * *', async () => {
 const PORT   = parseInt(process.env.BOT_API_PORT || '4000', 10);
 const SECRET = process.env.INTERNAL_API_SECRET || '';
 
+// Admin panelning "Tezkor amallar"idan kelgan bir martalik override'larni (ai_provider,
+// source_mode, source_url) kanal ustiga vaqtincha qo'yadi — bazadagi kanal sozlamasi
+// o'zgarmaydi, faqat shu bitta generatsiya uchun ishlatiladi.
+function applyChannelOverrides(channel, body) {
+  const overrides = {};
+
+  if (body.ai_provider) overrides.ai_provider = body.ai_provider;
+  if (body.source_mode) overrides.source_mode = body.source_mode;
+  if (body.source_mode === 'scrape' && Array.isArray(body.source_url)) {
+    overrides.source_url = body.source_url.map((u) => String(u).trim()).filter(Boolean).join('\n');
+  }
+
+  return Object.keys(overrides).length ? { ...channel, ...overrides } : channel;
+}
+
 function readBody(req) {
   return new Promise((resolve) => {
     let data = '';
@@ -98,7 +113,7 @@ const server = http.createServer(async (req, res) => {
         res.statusCode = 404;
         return res.end(JSON.stringify({ ok: false, error: 'Kanal topilmadi' }));
       }
-      const result = await runJobForChannel(bot, channel, true);
+      const result = await runJobForChannel(bot, applyChannelOverrides(channel, body), true);
       return res.end(JSON.stringify({ ok: true, ...result }));
     }
 
@@ -115,7 +130,7 @@ const server = http.createServer(async (req, res) => {
         res.statusCode = 404;
         return res.end(JSON.stringify({ ok: false, error: 'Kanal topilmadi' }));
       }
-      const result = await runJobForChannel(bot, channel, false);
+      const result = await runJobForChannel(bot, applyChannelOverrides(channel, body), false);
       return res.end(JSON.stringify({ ok: true, ...result }));
     }
 

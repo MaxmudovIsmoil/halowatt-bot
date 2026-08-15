@@ -22,28 +22,76 @@
 </div>
 
 <x-card title="Tezkor amallar">
-    <form method="POST" class="flex flex-wrap items-center gap-3">
+    <form method="POST" class="space-y-4">
         @csrf
-        <select name="channel_id" class="form-input !w-auto min-w-[180px] max-w-xs">
-            <option value="">Barcha kanallar</option>
-            @foreach($channels as $ch)
-                <option value="{{ $ch->id }}">{{ $ch->title }}</option>
-            @endforeach
-        </select>
-        <button type="submit" formaction="{{ route('run.now') }}"
-                class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-            </svg>
-            Hozir yaratib yuborish
-        </button>
-        <button type="submit" formaction="{{ route('generate.now') }}"
-                class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-            </svg>
-            Yaratib tasdiqqa qo'yish
-        </button>
+        <div class="flex flex-wrap items-center gap-3">
+            <select name="channel_id" data-quick-channel-select
+                    data-channel-settings="{{ $channelSettings->toJson() }}"
+                    class="form-input !w-auto min-w-[180px] max-w-xs">
+                <option value="">Barcha kanallar</option>
+                @foreach($channels as $ch)
+                    <option value="{{ $ch->id }}">{{ $ch->title }}</option>
+                @endforeach
+            </select>
+            <button type="submit" formaction="{{ route('run.now') }}"
+                    class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+                Hozir yaratib yuborish
+            </button>
+            <button type="submit" formaction="{{ route('generate.now') }}"
+                    class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                </svg>
+                Yaratib tasdiqqa qo'yish
+            </button>
+        </div>
+
+        {{-- Faqat shu bir martalik ishga tushirish uchun — kanalning o'zi sozlamalari o'zgarmaydi --}}
+        <div data-quick-override-wrap class="hidden grid gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 sm:grid-cols-2 dark:border-slate-700 dark:bg-slate-800/40">
+            <div>
+                <label class="form-label">AI provayder (shu safar uchun)</label>
+                <select name="ai_provider" data-quick-provider-select class="form-input">
+                    @foreach($aiProviders as $key => $meta)
+                        <option value="{{ $key }}">{{ $meta['label'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Kontent manbasi (shu safar uchun)</label>
+                <select name="source_mode" data-mode-select data-quick-mode-select class="form-input">
+                    <option value="ai">AI qidiradi (kategoriya/prompt bo'yicha)</option>
+                    <option value="scrape">Skriptdan olish (AI faqat tarjima qiladi)</option>
+                </select>
+            </div>
+            <div data-mode-url-wrap class="hidden sm:col-span-2">
+                <label class="form-label">Manba havolasi (URL)</label>
+                <div data-url-list class="space-y-2">
+                    <div data-url-row class="flex items-center gap-1.5">
+                        <input type="url" name="source_url[]" data-mode-url-input placeholder="https://example.com/maqola"
+                               class="form-input flex-1">
+                        <button type="button" data-url-remove title="O'chirish"
+                                class="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:hover:bg-red-500/10 dark:hover:text-red-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" data-url-add
+                        class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Qo'shish
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">
+                Bu tanlovlar faqat shu bir martalik ishga tushirish uchun — kanalning o'z sozlamalari o'zgarmaydi.
+            </p>
+        </div>
     </form>
     <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
         Yuborish: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $autoSend ? 'Avtomatik' : 'Admin tasdiqlaydi' }}</span> ·

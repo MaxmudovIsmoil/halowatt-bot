@@ -53,32 +53,74 @@
             </div>
         </div>
 
-        {{-- 2b-qator: Yuborish vaqtlari --}}
-        <div>
-            <label class="form-label">Har kuni yuborish vaqt(lar)i</label>
-            <div class="flex flex-wrap items-center gap-2">
-                <div data-time-list class="contents">
-                    @foreach($scheduleTimes as $t)
-                        <div data-time-row class="flex items-center gap-1.5">
-                            <input type="time" name="schedule_time[]" value="{{ $t }}" required
-                                   class="form-input !w-auto">
-                            <button type="button" data-time-remove title="O'chirish"
-                                    class="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:hover:bg-red-500/10 dark:hover:text-red-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                    @endforeach
-                </div>
-                <button type="button" data-time-add
-                        class="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    Qo'shish
-                </button>
+        {{-- 2b-qator: Kontent manbasi + Yuborish vaqtlari --}}
+        <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+                <label class="form-label">Kontent manbasi</label>
+                <select name="source_mode" data-mode-select class="form-input !w-auto min-w-[280px]">
+                    <option value="ai" {{ $channel->source_mode !== 'scrape' ? 'selected' : '' }}>AI qidiradi (kategoriya/prompt bo'yicha)</option>
+                    <option value="scrape" {{ $channel->source_mode === 'scrape' ? 'selected' : '' }}>Skriptdan olish (AI faqat tarjima qiladi)</option>
+                </select>
             </div>
+            <div>
+                <label class="form-label">Har kuni yuborish vaqt(lar)i</label>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div data-time-list class="contents">
+                        @foreach($scheduleTimes as $t)
+                            <div data-time-row class="flex items-center gap-1.5">
+                                <input type="time" name="schedule_time[]" value="{{ $t }}" required
+                                       class="form-input !w-auto">
+                                <button type="button" data-time-remove title="O'chirish"
+                                        class="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:hover:bg-red-500/10 dark:hover:text-red-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        @endforeach
+                    </div>
+                    <button type="button" data-time-add
+                            class="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Qo'shish
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Skript rejimi uchun manba havolalari --}}
+        @php
+            $sourceUrls = $channel->source_url ? preg_split('/\r?\n/', trim($channel->source_url)) : [];
+            if (empty($sourceUrls)) $sourceUrls = [''];
+        @endphp
+        <div data-mode-url-wrap class="{{ $channel->source_mode === 'scrape' ? '' : 'hidden' }}">
+            <label class="form-label">Manba havolasi (URL)</label>
+            <div data-url-list class="space-y-2">
+                @foreach($sourceUrls as $u)
+                    <div data-url-row class="flex items-center gap-1.5">
+                        <input type="url" name="source_url[]" data-mode-url-input value="{{ $u }}"
+                               placeholder="https://example.com/maqola" class="form-input flex-1">
+                        <button type="button" data-url-remove title="O'chirish"
+                                class="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:hover:bg-red-500/10 dark:hover:text-red-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                @endforeach
+            </div>
+            <button type="button" data-url-add
+                    class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Qo'shish
+            </button>
+            <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                Skript shu havoladan(lardan) matn yuklab oladi, AI esa uni faqat tanlangan tilga tarjima/qayta ishlaydi — o'zi qidirmaydi.
+            </p>
         </div>
 
         {{-- 3-qator: AI Prompt --}}
@@ -105,21 +147,6 @@
                 <input type="checkbox" name="auto_send" {{ $channel->auto_send ? 'checked' : '' }} class="form-checkbox">
                 Avtomatik yuborish
             </label>
-
-            <select name="source_mode" data-mode-select class="form-input !w-auto min-w-[240px] ml-auto">
-                <option value="ai" {{ $channel->source_mode !== 'scrape' ? 'selected' : '' }}>AI qidiradi (kategoriya/prompt bo'yicha)</option>
-                <option value="scrape" {{ $channel->source_mode === 'scrape' ? 'selected' : '' }}>Skriptdan olish (AI faqat tarjima qiladi)</option>
-            </select>
-        </div>
-
-        {{-- Skript rejimi uchun manba havolasi --}}
-        <div data-mode-url-wrap class="{{ $channel->source_mode === 'scrape' ? '' : 'hidden' }}">
-            <label class="form-label">Manba havolasi (URL)</label>
-            <input type="url" name="source_url" data-mode-url-input value="{{ $channel->source_url }}"
-                   placeholder="https://example.com/maqola" class="form-input">
-            <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                Skript shu havoladan matn yuklab oladi, AI esa uni faqat tanlangan tilga tarjima/qayta ishlaydi — o'zi qidirmaydi.
-            </p>
         </div>
 
         {{-- Tugmalar --}}

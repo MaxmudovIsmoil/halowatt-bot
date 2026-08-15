@@ -86,7 +86,7 @@ const PROVIDER_DEFAULT_MODELS = {
   claude:  'claude-sonnet-5',
   chatgpt: 'gpt-5.1',
   grok:    'grok-4',
-  gemini:  'gemini-2.5-flash',
+  gemini:  'gemini-flash-latest',
 };
 
 // Eski .env orqali sozlangan Claude kaliti hamon ishlashi uchun — admin panelda
@@ -113,10 +113,16 @@ async function getProviderCreds(provider) {
   return { apiKey, model };
 }
 
+// SDK'larning standart timeouti (~10 daqiqa) admin panel Laravel'ning 120s HTTP
+// timeoutidan ancha uzun — shu sabab AI sekinlashsa/osilib qolsa foydalanuvchi
+// "bot bilan bog'lanib bo'lmadi" degan chalg'ituvchi xato ko'radi. Shuning uchun
+// har bir provayder uchun bu chegaradan xavfsiz kamroq timeout beriladi.
+const AI_TIMEOUT_MS = 90000;
+
 // Claude — Anthropic Messages API + web_search vositasi (tarjima rejimida vosita o'chiriladi)
 async function generateWithClaude(prompt, { search = true } = {}) {
   const { apiKey, model } = await getProviderCreds('claude');
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, timeout: AI_TIMEOUT_MS });
 
   const resp = await client.messages.create({
     model,
@@ -135,7 +141,7 @@ async function generateWithClaude(prompt, { search = true } = {}) {
 // ChatGPT — OpenAI Responses API + web_search vositasi (tarjima rejimida vosita o'chiriladi)
 async function generateWithChatGPT(prompt, { search = true } = {}) {
   const { apiKey, model } = await getProviderCreds('chatgpt');
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({ apiKey, timeout: AI_TIMEOUT_MS });
 
   const resp = await client.responses.create({
     model,
@@ -149,7 +155,7 @@ async function generateWithChatGPT(prompt, { search = true } = {}) {
 // Grok — xAI Responses API (OpenAI SDK, boshqa baseURL) + web_search vositasi (tarjima rejimida vosita o'chiriladi)
 async function generateWithGrok(prompt, { search = true } = {}) {
   const { apiKey, model } = await getProviderCreds('grok');
-  const client = new OpenAI({ apiKey, baseURL: 'https://api.x.ai/v1' });
+  const client = new OpenAI({ apiKey, baseURL: 'https://api.x.ai/v1', timeout: AI_TIMEOUT_MS });
 
   const resp = await client.responses.create({
     model,
@@ -163,7 +169,7 @@ async function generateWithGrok(prompt, { search = true } = {}) {
 // Gemini — Google GenAI SDK + Google Search grounding (tarjima rejimida vosita o'chiriladi)
 async function generateWithGemini(prompt, { search = true } = {}) {
   const { apiKey, model } = await getProviderCreds('gemini');
-  const client = new GoogleGenAI({ apiKey });
+  const client = new GoogleGenAI({ apiKey, httpOptions: { timeout: AI_TIMEOUT_MS } });
 
   const resp = await client.models.generateContent({
     model,

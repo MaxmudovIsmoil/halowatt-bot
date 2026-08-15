@@ -15,7 +15,7 @@ class AiBalanceChecker
                 'claude'  => static::checkClaude($apiKey, $model),
                 'chatgpt' => static::checkOpenAiCompatible('https://api.openai.com/v1/chat/completions', $apiKey, $model ?: 'gpt-4o-mini'),
                 'grok'    => static::checkOpenAiCompatible('https://api.x.ai/v1/chat/completions', $apiKey, $model ?: 'grok-4'),
-                'gemini'  => static::checkGemini($apiKey, $model ?: 'gemini-2.5-flash'),
+                'gemini'  => static::checkGemini($apiKey, $model ?: 'gemini-flash-latest'),
                 default   => 'error',
             };
         } catch (\Throwable $e) {

@@ -25,7 +25,7 @@ return [
     'gemini' => [
         'label'         => 'Gemini (Google)',
         'key_hint'      => 'aistudio.google.com dan olinadi',
-        'model_default' => 'gemini-2.5-flash',
-        'model_hint'    => 'Masalan: gemini-2.5-flash',
+        'model_default' => 'gemini-flash-latest',
+        'model_hint'    => 'Masalan: gemini-flash-latest',
     ],
 ];

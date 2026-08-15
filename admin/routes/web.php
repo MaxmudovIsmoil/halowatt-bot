@@ -48,6 +48,6 @@ Route::middleware('auth')->group(function () {
 
     // AI provayderlar (Claude / ChatGPT / Grok / Gemini) — API kalit va model
     Route::get('/settings/ai', [AiSettingController::class, 'index'])->name('settings.ai');
-    Route::post('/settings/ai', [AiSettingController::class, 'update'])->name('settings.ai.update');
+    Route::post('/settings/ai/{key}', [AiSettingController::class, 'update'])->name('settings.ai.update');
     Route::post('/settings/ai/{key}/check-balance', [AiSettingController::class, 'checkBalance'])->name('settings.ai.check-balance');
 });

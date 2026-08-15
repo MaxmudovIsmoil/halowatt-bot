@@ -19,8 +19,10 @@ class BotClient
     private function post(string $path, array $body = []): array
     {
         try {
+            // Bot tomonidagi AI so'rovlari (90s) + skript rejimida bir nechta URL skrab qilish
+            // vaqtini qamrab olishi uchun bot tomonidan biroz kattaroq qilib qo'yilgan.
             $res = Http::withHeaders(['X-Internal-Secret' => $this->secret])
-                ->timeout(120)
+                ->timeout(180)
                 ->post($this->base . $path, $body);
             return $res->json() ?? ['ok' => false, 'error' => 'bo\'sh javob'];
         } catch (ConnectionException $e) {
@@ -42,16 +44,20 @@ class BotClient
         return $this->post('/generate-now');
     }
 
-    /** Bitta kanal uchun hozir yaratib yuborish */
-    public function runChannel(int $channelId): array
+    /**
+     * Bitta kanal uchun hozir yaratib yuborish.
+     * $overrides — faqat shu bir martalik chaqiruv uchun (kanalning saqlangan
+     * sozlamalarini o'zgartirmaydi): ai_provider, source_mode, source_url (array).
+     */
+    public function runChannel(int $channelId, array $overrides = []): array
     {
-        return $this->post('/run-channel', ['channel_id' => $channelId]);
+        return $this->post('/run-channel', ['channel_id' => $channelId] + $overrides);
     }
 
-    /** Bitta kanal uchun hozir yaratib navbatga qo'yish (tasdiq kutadi) */
-    public function generateChannel(int $channelId): array
+    /** Bitta kanal uchun hozir yaratib navbatga qo'yish (tasdiq kutadi) — $overrides yuqoridagi kabi */
+    public function generateChannel(int $channelId, array $overrides = []): array
     {
-        return $this->post('/generate-channel', ['channel_id' => $channelId]);
+        return $this->post('/generate-channel', ['channel_id' => $channelId] + $overrides);
     }
 
     /** Tasdiqlangan postni yuborish */

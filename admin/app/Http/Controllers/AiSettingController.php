@@ -24,31 +24,29 @@ class AiSettingController extends Controller
         return view('settings.ai', ['providers' => $providers]);
     }
 
-    public function update(Request $request)
+    public function update(Request $request, string $key)
     {
+        abort_unless(array_key_exists($key, config('ai_providers')), 404);
+        $meta = config('ai_providers')[$key];
+
         $data = $request->validate([
-            'providers'            => ['required', 'array'],
-            'providers.*.api_key'  => ['nullable', 'string', 'max:1000'],
-            'providers.*.model'    => ['nullable', 'string', 'max:255'],
-            'providers.*.active'   => ['nullable', 'boolean'],
+            'api_key' => ['nullable', 'string', 'max:1000'],
+            'model'   => ['nullable', 'string', 'max:255'],
+            'active'  => ['nullable', 'boolean'],
         ]);
 
-        foreach (config('ai_providers') as $key => $meta) {
-            $incoming = $data['providers'][$key] ?? [];
-
-            // Bo'sh qoldirilsa — avval saqlangan API kalit o'zgarmaydi (qayta kiritish shart emas).
-            $apiKey = trim((string) ($incoming['api_key'] ?? ''));
-            if ($apiKey !== '') {
-                Setting::set("ai_{$key}_api_key", $apiKey);
-            }
-
-            $model = trim((string) ($incoming['model'] ?? ''));
-            Setting::set("ai_{$key}_model", $model !== '' ? $model : $meta['model_default']);
-
-            Setting::set("ai_{$key}_active", !empty($incoming['active']) ? '1' : '0');
+        // Bo'sh qoldirilsa — avval saqlangan API kalit o'zgarmaydi (qayta kiritish shart emas).
+        $apiKey = trim((string) ($data['api_key'] ?? ''));
+        if ($apiKey !== '') {
+            Setting::set("ai_{$key}_api_key", $apiKey);
         }
 
-        return back()->with('success', 'AI provayder sozlamalari saqlandi.');
+        $model = trim((string) ($data['model'] ?? ''));
+        Setting::set("ai_{$key}_model", $model !== '' ? $model : $meta['model_default']);
+
+        Setting::set("ai_{$key}_active", !empty($data['active']) ? '1' : '0');
+
+        return back()->with('success', $meta['label'] . ' sozlamalari saqlandi.');
     }
 
     public function checkBalance(string $key)
